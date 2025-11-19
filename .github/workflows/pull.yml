@@ -1,21 +1,30 @@
 name: Pull Request Workflow (Static Website)
 
+# 🔔 Trigger this workflow when someone opens a pull request into main
 on:
   pull_request:
     branches: ["main"]
 
 jobs:
   preview-and-validate:
+    #Use GitHub's Ubuntu virtual environment
     runs-on: ubuntu-latest
 
     steps:
+      #Checkout the pull request version of the repo
       - name: Checkout Pull Request
         uses: actions/checkout@v4
 
-      - name: Validate HTML (PR version)
-        uses: Cyb3r-Jak3/html5validator-action@v1.0.0
+      #Install HTMLHint globally for HTML validation (Helps us improve code quality)
+      - name: Install HTMLHint
+        run: npm install -g htmlhint
 
-      - name: Check for unnecessary files
+      #Validate HTML files in the pull request changes
+      - name: Validate HTML using HTMLHint
+        run: htmlhint "**/*.html"
+
+      #Check for stray or temporary files 
+      - name: Check for temporary or stray files
         run: |
-          echo "Checking for temporary files..."
+          echo "Checking for .tmp and backup files..."
           find . -name "*.tmp" -o -name "*~"
