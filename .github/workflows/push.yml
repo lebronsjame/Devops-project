@@ -1,34 +1,66 @@
 name: Push Workflow
 
-#Trigger this workflow whenever someone pushes to the main branch
+# Trigger this workflow whenever someone pushes to the main branch
 on:
   push:
     branches: ["main"]
 
 jobs:
   validate-static-site:
-    #Use GitHub's Ubuntu virtual machine
     runs-on: ubuntu-latest
 
     steps:
-      #Download the repository code into the runner
+      # Download the repository code into the runner
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      #Display project structure (helps ensure all files exist)
+      # Display project structure
       - name: List project files
         run: ls -R
 
-      #Install HTMLHint globally (HTML linter for static websites)
+      # Install HTMLHint globally
       - name: Install HTMLHint
         run: npm install -g htmlhint
 
-      # Validate all HTML files using HTMLHint
+      # Validate HTML using HTMLHint
       - name: Validate HTML using HTMLHint
         run: htmlhint "**/*.html"
 
-      #Check for large files that shouldn't be in the repository
+      # Check for large files (>5MB)
       - name: Check for large files
         run: |
           echo "Scanning for files larger than 5MB..."
           find . -type f -size +5M || true
+
+
+  #Sync all branches
+  sync-branches:
+    needs: validate-static-site   # Only run after validation succeeds
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Allow workflow to push to branches
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed so git can switch branches
+
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Get list of branches except main
+        id: list
+        run: |
+          git branch -r | grep -v "main" | sed 's/origin\///' > branches.txt
+          echo "Branches to sync:"
+          cat branches.txt
+
+      - name: Merge main into all branches #logic to update all the branches
+        run: |
+          while read branch; do
+            echo "Updating $branch..."
+            git checkout $branch || continue
+            git merge origin/main --no-edit || true
+            git push origin $branch || true
+          done < branches.txt
