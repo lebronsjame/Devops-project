@@ -88,8 +88,12 @@ function updatePost(req, res) {
       const list = db[col.key];
       const index = list.findIndex(p => p.id === id);
       if (index !== -1) {
-        if (username && list[index].username !== username) {
-          return res.status(403).json({ success: false, message: "You are not allowed to edit this post." });
+        if (username) {
+          const provided = (username || '').toString().trim().toLowerCase();
+          const owner = (list[index].username || '').toString().trim().toLowerCase();
+          if (provided && owner !== provided) {
+            return res.status(403).json({ success: false, message: "You are not allowed to edit this post." });
+          }
         }
 
         // update only provided fields (support skill-only edits)
@@ -127,8 +131,12 @@ function deletePost(req, res) {
       const list = db[col.key];
       const index = list.findIndex(p => p.id === id);
       if (index !== -1) {
-        if (username && list[index].username !== username) {
-          return res.status(403).json({ success: false, message: "You are not allowed to delete this post." });
+        if (username) {
+          const provided = (username || '').toString().trim().toLowerCase();
+          const owner = (list[index].username || '').toString().trim().toLowerCase();
+          if (provided && owner !== provided) {
+            return res.status(403).json({ success: false, message: "You are not allowed to delete this post." });
+          }
         }
 
         list.splice(index, 1);

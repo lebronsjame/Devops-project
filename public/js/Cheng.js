@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // show 'I can teach' before the skill
         li.innerHTML = `<strong>${username}:</strong> I can teach ${o.skill}${o.category ? ' • ' + o.category : ''}` +
                  `<br><small>${o.description || ''}</small>`;
-        if (currentUser && username === currentUser) {
+        if (currentUser && username && username.toLowerCase() === currentUser.toLowerCase()) {
           const br = document.createElement('br');
           const editBtn = document.createElement('button');
           editBtn.textContent = 'Edit';
@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // show 'I want to learn' before the skill
         li.innerHTML = `<strong>${username}:</strong> I want to learn ${r.skill}${r.category ? ' • ' + r.category : ''}` +
                  `<br><small>${r.description || ''}</small>`;
-        if (currentUser && username === currentUser) {
+        if (currentUser && username && username.toLowerCase() === currentUser.toLowerCase()) {
           const br = document.createElement('br');
           const editBtn = document.createElement('button');
           editBtn.textContent = 'Edit';
