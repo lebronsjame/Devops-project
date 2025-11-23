@@ -3,105 +3,205 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const SkillPostUtil = require('./utils/SkillPostUtil');
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const bcrypt = require("bcryptjs");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json());  // <-- FIXED: moved to top
+app.use(express.static(path.join(__dirname, "public"))); // serve frontend
 
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Simple health endpoint
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-const USERS_FILE = path.join(__dirname, 'utils', 'skilllink.json');
+const USERS_FILE = path.join(__dirname, "utils", "skilllink.json");
 
 function loadUsers() {
     try {
         if (!fs.existsSync(USERS_FILE)) return [];
-        const raw = fs.readFileSync(USERS_FILE, 'utf8');
+        const raw = fs.readFileSync(USERS_FILE, "utf8");
         if (!raw) return [];
         return JSON.parse(raw);
     } catch (err) {
-        console.error('Error reading users file:', err);
+        console.error("Error reading users file:", err);
         return [];
     }
 }
 
 function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
 }
 
 function makeToken(payload) {
-    // Very small, non-cryptographic token for demo purposes only
-    return Buffer.from(JSON.stringify(payload)).toString('base64');
+    return Buffer.from(JSON.stringify(payload)).toString("base64");
 }
 
 function parseToken(token) {
     try {
-        return JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-    } catch (e) {
+        return JSON.parse(Buffer.from(token, "base64").toString("utf8"));
+    } catch {
         return null;
     }
 }
 
-// Register
-app.post('/api/register', async (req, res) => {
+app.post("/api/register", async (req, res) => {
     const { username, password } = req.body || {};
+
     if (!username || !password) {
-        return res.status(400).json({ success: false, message: 'username and password required' });
+        return res.status(400).json({
+            success: false,
+            message: "username and password required"
+        });
     }
 
     const users = loadUsers();
-    if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase())) {
-        return res.status(409).json({ success: false, message: 'Username already taken' });
+
+    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        return res.status(409).json({
+            success: false,
+            message: "Username already taken"
+        });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const id = Date.now().toString();
+
     const user = { id, username, passwordHash };
     users.push(user);
     saveUsers(users);
 
-    const token = makeToken({ id: user.id, username: user.username, ts: Date.now() });
-    return res.json({ success: true, user: { id: user.id, username: user.username }, token });
+    const token = makeToken({ id: user.id, username: user.username });
+
+    res.json({
+        success: true,
+        user: { id: user.id, username: user.username },
+        token
+    });
 });
 
-// Login
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
     const { username, password } = req.body || {};
+
     if (!username || !password) {
-        return res.status(400).json({ success: false, message: 'username and password required' });
+        return res.status(400).json({
+            success: false,
+            message: "username and password required"
+        });
     }
 
     const users = loadUsers();
-    const user = users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase());
-    if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+    if (!user)
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
-    const token = makeToken({ id: user.id, username: user.username, ts: Date.now() });
-    return res.json({ success: true, user: { id: user.id, username: user.username }, token });
+    if (!match)
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    const token = makeToken({ id: user.id, username: user.username });
+
+    res.json({
+        success: true,
+        user: { id: user.id, username: user.username },
+        token
+    });
 });
 
-// Get current user (simple token parsing)
-app.get('/api/me', (req, res) => {
-    const auth = req.headers.authorization || '';
-    const parts = auth.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') return res.status(401).json({ success: false });
+app.get("/api/me", (req, res) => {
+    const auth = req.headers.authorization || "";
+    const parts = auth.split(" ");
+
+    if (parts.length !== 2 || parts[0] !== "Bearer")
+        return res.status(401).json({ success: false });
+
     const token = parts[1];
     const data = parseToken(token);
-    if (!data || !data.id) return res.status(401).json({ success: false });
+
+    if (!data || !data.id)
+        return res.status(401).json({ success: false });
 
     const users = loadUsers();
     const user = users.find(u => u.id === data.id);
-    if (!user) return res.status(404).json({ success: false });
 
-    return res.json({ success: true, user: { id: user.id, username: user.username } });
+    if (!user)
+        return res.status(404).json({ success: false });
+
+    res.json({
+        success: true,
+        user: { id: user.id, username: user.username }
+    });
+});
+
+const dataDir = path.join(__dirname, "data");
+const offersFile = path.join(dataDir, "offers.json");
+const requestsFile = path.join(dataDir, "requests.json");
+
+function ensureFile(filePath, defaultData) {
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir);
+    }
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2), "utf-8");
+    }
+}
+
+ensureFile(offersFile, [
+    { name: "John", skill: "Python" },
+    { name: "Mary", skill: "Guitar" }
+]);
+
+ensureFile(requestsFile, [
+    { name: "Alex", skill: "Piano" },
+    { name: "Lisa", skill: "Cooking" }
+]);
+
+function loadJson(file) {
+    try {
+        return JSON.parse(fs.readFileSync(file, "utf-8"));
+    } catch {
+        return [];
+    }
+}
+
+function saveJson(file, data) {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8");
+}
+
+// Offers API
+app.get("/api/offers", (req, res) => {
+    res.json(loadJson(offersFile));
+});
+
+app.post("/api/offers", (req, res) => {
+    const { name, skill } = req.body || {};
+
+    if (!name || !skill)
+        return res.status(400).json({ error: "name and skill required" });
+
+    const offers = loadJson(offersFile);
+    offers.push({ name, skill });
+    saveJson(offersFile, offers);
+
+    res.status(201).json({ message: "Offer added" });
+});
+
+app.get("/api/requests", (req, res) => {
+    res.json(loadJson(requestsFile));
+});
+
+app.post("/api/requests", (req, res) => {
+    const { name, skill } = req.body || {};
+
+    if (!name || !skill)
+        return res.status(400).json({ error: "name and skill required" });
+
+    const requests = loadJson(requestsFile);
+    requests.push({ name, skill });
+    saveJson(requestsFile, requests);
+
+    res.status(201).json({ message: "Request added" });
 });
 
 // View all posts
@@ -116,4 +216,6 @@ app.delete('/api/posts/:id', SkillPostUtil.deletePost);
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`Merged SkillLink server running at http://localhost:${PORT}`);
 });

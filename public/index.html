@@ -4,18 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillLink</title>
+
   <link rel="stylesheet" href="css/styles.css">
-  <style>
-    /* Minimal modal styles for login and register */
-    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:50; }
-    .modal { background:white; padding:18px; border-radius:8px; width:320px; box-shadow:0 6px 24px rgba(0,0,0,0.2); }
-    .modal h3 { margin-top:0; }
-    .modal label { display:block; font-size:13px; margin-top:8px; }
-    .modal input { width:100%; padding:8px; margin-top:4px; box-sizing:border-box; }
-    .modal .actions { margin-top:12px; display:flex; gap:8px; justify-content:flex-end; }
-    .btn { padding:8px 12px; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:#f4f4f4; }
-  </style>
 </head>
+
 <body>
   <header>
     <h1>SkillLink</h1>
@@ -35,9 +27,11 @@
 
     <section class="skills-section">
       <div class="skills-container">
+
         <div class="column">
           <h3>Skill Offers</h3>
           <ul id="offersList">
+            <!-- JS will fill this from offers.json -->
           </ul>
           <button class="add-btn" id="addOfferBtn">+ Add Offer</button>
         </div>
@@ -46,9 +40,11 @@
           <h3>Skill Requests</h3>
           <ul id="requestsList">
 
+            <!-- JS will fill this from requests.json -->
           </ul>
           <button class="add-btn" id="addRequestBtn">+ Add Request</button>
         </div>
+
       </div>
     </section>
   </main>
@@ -105,5 +101,40 @@
 </div>
 
 <script src="js/managePosts.js"></script>
+  <div id="offerModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeOffer">&times;</span>
+      <h2>Add Skill Offer</h2>
+
+      <form id="offerForm">
+        <label>Your Name</label>
+        <input type="text" id="offerName" required>
+
+        <label>What can you teach?</label>
+        <input type="text" id="offerSkill" required>
+
+        <button type="submit" class="submit-btn">Submit</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="requestModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeRequest">&times;</span>
+      <h2>Add Skill Request</h2>
+
+      <form id="requestForm">
+        <label>Your Name</label>
+        <input type="text" id="requestName" required>
+
+        <label>What do you want to learn?</label>
+        <input type="text" id="requestSkill" required>
+
+        <button type="submit" class="submit-btn">Submit</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/Cheng.js"></script>
 </body>
 </html>
