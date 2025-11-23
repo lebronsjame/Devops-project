@@ -69,7 +69,7 @@ function loadPosts() {
           <br><small>${post.skill} • ${post.category}</small>
         `;
 
-        if (currentUser && post.username === currentUser) {
+        if (currentUser && post.username && post.username.toLowerCase() === currentUser.toLowerCase()) {
           const editBtn = document.createElement("button");
           editBtn.textContent = "Edit";
           editBtn.className = "action-btn edit-btn";
@@ -96,7 +96,7 @@ function loadPosts() {
           <br><small>${post.skill} • ${post.category}</small>
         `;
 
-        if (currentUser && post.username === currentUser) {
+        if (currentUser && post.username && post.username.toLowerCase() === currentUser.toLowerCase()) {
           const editBtn = document.createElement("button");
           editBtn.textContent = "Edit";
           editBtn.className = "action-btn edit-btn";
