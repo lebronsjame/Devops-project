@@ -139,12 +139,15 @@ function updatePost(req, res) {
         const ownerId = (list[index].userId ?? "").toString().trim();
 
         if (!currentUserId) {
+          log("warn", "AUTH_FAIL", { id, reason: "not_logged_in" });
           return res.status(401).json({ success: false, message: "Please log in." });
         }
         if (!ownerId) {
+          log("warn", "FORBIDDEN", { id, reason: "missing_owner_id" });
           return res.status(403).json({ success: false, message: "This post cannot be edited (missing owner id)." });
         }
         if (ownerId !== currentUserId) {
+          log("warn", "FORBIDDEN", { id, reason: "not_owner", ownerId, userId: currentUserId });
           return res.status(403).json({ success: false, message: "You are not allowed to edit this post." });
         }
 
