@@ -66,8 +66,8 @@ describe("PUT /api/posts/:id (Update Post)", () => {
         username: myUser.username,
         skill: "OldSkill",
         category: "OldCat",
-        description: "Old description text"
-      }
+        description: "Old description text",
+      },
     ];
     writeJson(offersFile, offers);
     writeJson(requestsFile, []);
@@ -82,7 +82,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "Programming",
-        description: "This is a valid description."
+        description: "This is a valid description.",
       });
 
     expect(res.status).toBe(200);
@@ -92,6 +92,21 @@ describe("PUT /api/posts/:id (Update Post)", () => {
     expect(offersNow[0].skill).toBe("Python");
   });
 
+  test("400 when skill is missing", async () => {
+    const res = await request(app)
+      .put(`/api/posts/${myPostId}`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({
+        skill: "",
+        category: "Programming",
+        description: "This is a valid description.",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/skill is required/i);
+  });
+
   test("400 when category is empty", async () => {
     const res = await request(app)
       .put(`/api/posts/${myPostId}`)
@@ -99,7 +114,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "",
-        description: "This is a valid description."
+        description: "This is a valid description.",
       });
 
     expect(res.status).toBe(400);
@@ -107,13 +122,11 @@ describe("PUT /api/posts/:id (Update Post)", () => {
   });
 
   test("401 when token missing", async () => {
-    const res = await request(app)
-      .put(`/api/posts/${myPostId}`)
-      .send({
-        skill: "Python",
-        category: "Programming",
-        description: "This is a valid description."
-      });
+    const res = await request(app).put(`/api/posts/${myPostId}`).send({
+      skill: "Python",
+      category: "Programming",
+      description: "This is a valid description.",
+    });
 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
@@ -126,7 +139,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "Programming",
-        description: "This is a valid description."
+        description: "This is a valid description.",
       });
 
     expect(res.status).toBe(403);
@@ -140,7 +153,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "Programming",
-        description: "This is a valid description."
+        description: "This is a valid description.",
       });
 
     expect(res.status).toBe(404);
@@ -154,7 +167,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "A".repeat(31),
         category: "Programming",
-        description: "Valid long enough description"
+        description: "Valid long enough description",
       });
 
     expect(res.status).toBe(400);
@@ -169,7 +182,7 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "Programming",
-        description: "short"
+        description: "short",
       });
 
     expect(res.status).toBe(400);
@@ -184,10 +197,83 @@ describe("PUT /api/posts/:id (Update Post)", () => {
       .send({
         skill: "Python",
         category: "Programming",
-        description: ""
+        description: "",
       });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+  });
+
+  test("403 when post cannot be edited because owner id is missing", async () => {
+    const offers = readJson(offersFile);
+    const targetId = 77777;
+
+    offers.push({
+      id: targetId,
+      userId: null, // key part
+      username: "someone",
+      skill: "Python",
+      category: "Coding",
+      description: "Long enough description",
+    });
+    writeJson(offersFile, offers);
+
+    const res = await request(app)
+      .put(`/api/posts/${targetId}`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({
+        skill: "JS",
+        category: "Coding",
+        description: "This is long enough",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/missing owner id/i);
+  });
+
+  test("normalize assigns ids and writes back when ids are missing", async () => {
+    // remove ids on purpose
+    writeJson(offersFile, [
+      { userId: "u1", username: "pavian", skill: "A", category: "", description: "" },
+    ]);
+    writeJson(requestsFile, [
+      { userId: "u2", username: "alex", skill: "B", category: "", description: "" },
+    ]);
+
+    const res = await request(app).get("/api/posts");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.offers[0].id).toBeTruthy();
+    expect(res.body.requests[0].id).toBeTruthy();
+
+    // confirm written back to disk
+    const offersAfter = readJson(offersFile);
+    const requestsAfter = readJson(requestsFile);
+    expect(offersAfter[0].id).toBeTruthy();
+    expect(requestsAfter[0].id).toBeTruthy();
+  });
+
+  test("500 when server fails while saving (writeFileSync throws)", async () => {
+    const original = fs.writeFileSync;
+    fs.writeFileSync = () => {
+      throw new Error("disk full");
+    };
+
+    const res = await request(app)
+      .put(`/api/posts/${myPostId}`)
+      .set("Authorization", `Bearer ${myToken}`)
+      .send({
+        skill: "Python",
+        category: "Programming",
+        description: "This is a valid description.",
+      });
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+
+    // cleanup
+    fs.writeFileSync = original;
   });
 });
