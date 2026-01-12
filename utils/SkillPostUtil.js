@@ -98,13 +98,19 @@ function updatePost(req, res) {
     const id = parseInt(req.params.id, 10);
     const { skill, category, description } = req.body || {};
 
+    // (a) start log (after id parsed)
+    log("log", "REQUEST_RECEIVED", { id, userId: req.user?.id || null });
+
     if (!skill || !String(skill).trim()) {
+      log("warn", "VALIDATION_FAIL", { id, reason: "skill_required" });
       return res.status(400).json({ success: false, message: "Skill is required." });
     }
     if (!category || !String(category).trim()) {
+      log("warn", "VALIDATION_FAIL", { id, reason: "category_required" });
       return res.status(400).json({ success: false, message: "Category is required." });
     }
     if (!description || !String(description).trim()) {
+      log("warn", "VALIDATION_FAIL", { id, reason: "description_required" });
       return res.status(400).json({ success: false, message: "Description is required." });
     }
 
@@ -113,9 +119,11 @@ function updatePost(req, res) {
     const descriptionClean = String(description).trim();
 
     if (skillClean.length > 30) {
+      log("warn", "VALIDATION_FAIL", { id, reason: "skill_too_long" });
       return res.status(400).json({ success: false, message: "Skill must be 30 characters or less." });
     }
     if (descriptionClean.length < 10) {
+      log("warn", "VALIDATION_FAIL", { id, reason: "description_too_short" });
       return res.status(400).json({ success: false, message: "Description must be at least 10 characters." });
     }
 
