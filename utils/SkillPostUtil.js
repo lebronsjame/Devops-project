@@ -156,6 +156,10 @@ function updatePost(req, res) {
         list[index].description = descriptionClean;
 
         writeJson(col.file, list);
+
+        // (b) success log
+        log("log", "SUCCESS", { id, collection: col.key, userId: currentUserId });
+
         found = true;
         break;
       }
