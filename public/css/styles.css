@@ -74,7 +74,7 @@ main {
   transition: background 0.2s;
 }
 
-.search-section button:hover {
+search-section button:hover {
   background-color: #005fa3;
 }
 
@@ -144,12 +144,12 @@ footer {
 /* Common style for action buttons (Edit/Delete) */
 .action-btn {
   border: none;
-  padding: 6px 14px;
+  padding: 4px 10px;
   margin-top: 6px;
   margin-right: 6px;
-  border-radius: 999px;      /* round pill shape */
-  color: #ffffff;            /* white text */
-  font-size: 0.85rem;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -176,7 +176,7 @@ footer {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  display: none;          /* hidden by default */
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
@@ -221,6 +221,34 @@ footer {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* Space out modal form controls */
+.modal-content form label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.modal-content form input,
+.modal-content form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 10px;
+}
+
+/* Make description boxes taller + nicer */
+.modal-content form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Add space above submit button */
+.modal-content form .submit-btn,
+.modal-content form button[type="submit"] {
+  margin-top: 10px;
+}
+
 /* Background overlay */
 .modal {
   display: none; 
@@ -347,3 +375,62 @@ footer {
     .submit-btn:hover {
       background: #45a049;
     }
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0;               /* IMPORTANT: no left gap now */
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(0, 120, 212, 0.12);
+  color: #0078d4;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 120, 212, 0.25);
+  line-height: 1.2;
+}
+
+/* Optional: slightly different chip on hover */
+.column ul li:hover .category-chip {
+  background: rgba(0, 120, 212, 0.18);
+  border-color: rgba(0, 120, 212, 0.35);
+}
+
+/* Post layout spacing */
+.column ul li .post-header {
+  margin-bottom: 8px;
+}
+
+.column ul li .post-category {
+  margin: 0 0 12px 0; /* more space between category and description */
+}
+
+.column ul li .post-description {
+  margin: 0 0 12px 0; /* space between description and buttons */
+}
+
+/* Bigger description text */
+.column ul li .post-description small {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+  display: block;
+}
+
+/* Space between description and buttons */
+.column ul li .post-actions {
+  display: flex;
+}
+
+/* Smaller Edit/Delete buttons */
+.column ul li .action-btn {
+  font-size: 0.75rem;
+  margin: 0; /* let .post-actions control spacing */
+}
+
+/* If your buttons are appended directly onto the li */
+.column ul li .action-btn {
+  margin-top: 0;      /* handled by description spacing now */
+  margin-right: 8px;
+}

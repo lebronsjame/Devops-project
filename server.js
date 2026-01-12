@@ -40,6 +40,33 @@ function parseToken(token) {
     }
 }
 
+// Added: auth middleware
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization || "";
+  const parts = auth.split(" ");
+
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = parts[1];
+  const data = parseToken(token);
+
+  if (!data || !data.id) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const users = loadUsers();
+  const user = users.find((u) => u.id === data.id);
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: "User not found" });
+  }
+
+  req.user = { id: user.id, username: user.username };
+  next();
+}
+
 app.post("/api/register", async (req, res) => {
     const { username, password } = req.body || {};
 
@@ -182,6 +209,7 @@ function normalizeDataFiles() {
 
     const offers = offersRaw.map(o => ({
         id: o.id || null,
+        userId: (o.userId ?? null),
         username: o.username || o.name || "",
         skill: o.skill || "",
         category: o.category || "",
@@ -190,6 +218,7 @@ function normalizeDataFiles() {
 
     const requests = requestsRaw.map(r => ({
         id: r.id || null,
+        userId: (r.userId ?? null),
         username: r.username || r.name || "",
         skill: r.skill || "",
         category: r.category || "",
@@ -206,9 +235,29 @@ function normalizeDataFiles() {
     }
 
     if (changed) {
-        // write back normalized shapes (use username)
-        saveJson(offersFile, offers.map(o => ({ id: o.id, username: o.username, skill: o.skill, category: o.category, description: o.description })));
-        saveJson(requestsFile, requests.map(r => ({ id: r.id, username: r.username, skill: r.skill, category: r.category, description: r.description })));
+        // write back normalized shapes (keep userId + username)
+        saveJson(
+          offersFile,
+          offers.map(o => ({
+            id: o.id,
+            userId: o.userId ?? null,
+            username: o.username,
+            skill: o.skill,
+            category: o.category,
+            description: o.description
+          }))
+        );
+        saveJson(
+          requestsFile,
+          requests.map(r => ({
+            id: r.id,
+            userId: r.userId ?? null,
+            username: r.username,
+            skill: r.skill,
+            category: r.category,
+            description: r.description
+          }))
+        );
     }
 
     return { offers, requests };
@@ -220,19 +269,47 @@ app.get("/api/offers", (req, res) => {
     res.json(db.offers);
 });
 
-app.post("/api/offers", (req, res) => {
-    const { name, skill } = req.body || {};
+// CHANGE: requireAuth + validation for skill, category, and description
+app.post("/api/offers", requireAuth, (req, res) => {
+  const { skill, category, description } = req.body || {};
 
-    if (!name || !skill)
-        return res.status(400).json({ error: "name and skill required" });
+  if (!skill || !String(skill).trim()) {
+    return res.status(400).json({ success: false, message: "Skill is required." });
+  }
+  if (!category || !String(category).trim()) {
+    return res.status(400).json({ success: false, message: "Category is required." });
+  }
+  if (!description || !String(description).trim()) {
+    return res.status(400).json({ success: false, message: "Description is required." });
+  }
 
-    const offers = loadJson(offersFile);
-    const id = getNextId();
-    const newPost = { id, username: name, skill, category: "", description: "" };
-    offers.push(newPost);
-    saveJson(offersFile, offers);
+  const skillClean = String(skill).trim();
+  const categoryClean = String(category).trim();
+  const descriptionClean = String(description).trim();
 
-    res.status(201).json({ message: "Offer added", post: newPost });
+  if (skillClean.length > 30) {
+    return res.status(400).json({ success: false, message: "Skill must be 30 characters or less." });
+  }
+  if (descriptionClean.length < 10) {
+    return res.status(400).json({ success: false, message: "Description must be at least 10 characters." });
+  }
+
+  const offers = loadJson(offersFile);
+  const id = getNextId();
+
+  const newPost = {
+    id,
+    userId: req.user.id,
+    username: req.user.username,
+    skill: skillClean,
+    category: categoryClean,
+    description: descriptionClean,
+  };
+
+  offers.push(newPost);
+  saveJson(offersFile, offers);
+
+  return res.status(201).json({ success: true, message: "Offer added", post: newPost });
 });
 
 app.get("/api/requests", (req, res) => {
@@ -240,29 +317,57 @@ app.get("/api/requests", (req, res) => {
     res.json(db.requests);
 });
 
-app.post("/api/requests", (req, res) => {
-    const { name, skill } = req.body || {};
+// CHANGE: requireAuth + validation for skill, category, and description
+app.post("/api/requests", requireAuth, (req, res) => {
+  const { skill, category, description } = req.body || {};
 
-    if (!name || !skill)
-        return res.status(400).json({ error: "name and skill required" });
+  if (!skill || !String(skill).trim()) {
+    return res.status(400).json({ success: false, message: "Skill is required." });
+  }
+  if (!category || !String(category).trim()) {
+    return res.status(400).json({ success: false, message: "Category is required." });
+  }
+  if (!description || !String(description).trim()) {
+    return res.status(400).json({ success: false, message: "Description is required." });
+  }
 
-    const requests = loadJson(requestsFile);
-    const id = getNextId();
-    const newPost = { id, username: name, skill, category: "", description: "" };
-    requests.push(newPost);
-    saveJson(requestsFile, requests);
+  const skillClean = String(skill).trim();
+  const categoryClean = String(category).trim();
+  const descriptionClean = String(description).trim();
 
-    res.status(201).json({ message: "Request added", post: newPost });
+  if (skillClean.length > 30) {
+    return res.status(400).json({ success: false, message: "Skill must be 30 characters or less." });
+  }
+  if (descriptionClean.length < 10) {
+    return res.status(400).json({ success: false, message: "Description must be at least 10 characters." });
+  }
+
+  const requests = loadJson(requestsFile);
+  const id = getNextId();
+
+  const newPost = {
+    id,
+    userId: req.user.id,
+    username: req.user.username,
+    skill: skillClean,
+    category: categoryClean,
+    description: descriptionClean,
+  };
+
+  requests.push(newPost);
+  saveJson(requestsFile, requests);
+
+  return res.status(201).json({ success: true, message: "Request added", post: newPost });
 });
 
 // View all posts
 app.get('/api/posts', SkillPostUtil.viewPosts);
 
-// Update a post
-app.put('/api/posts/:id', SkillPostUtil.updatePost);
+// Update a post (now requires login)
+app.put("/api/posts/:id", requireAuth, SkillPostUtil.updatePost);
 
-// Delete a post
-app.delete('/api/posts/:id', SkillPostUtil.deletePost);
+// Delete a post (now requires login)
+app.delete("/api/posts/:id", requireAuth, SkillPostUtil.deletePost);
 
 app.listen(PORT, () => {
     console.log(`Merged SkillLink server running at http://localhost:${PORT}`);

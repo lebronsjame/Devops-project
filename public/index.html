@@ -53,8 +53,6 @@
     <p>2025 SkillLink | A Peer Skill-Sharing Platform</p>
   </footer>
 
-  <script src="js/Benjamin.js"></script>
-  <script src="js/Pavian.js"></script>
   <!-- Login Modal -->
   <div id="loginModalBackdrop" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
@@ -88,6 +86,11 @@
     <label for="editSkillInput">Skill</label>
     <input type="text" id="editSkillInput" />
 
+    <label for="editCategoryInput">Category</label>
+    <input id="editCategoryInput" type="text" placeholder="e.g. Programming, Music" />
+
+    <label for="editDescriptionInput">Description</label>
+    <textarea id="editDescriptionInput" placeholder="Describe what you teach/need"></textarea>
 
     <div class="modal-actions">
       <button id="editCancelBtn" class="action-btn delete-btn">Cancel</button>
@@ -102,11 +105,14 @@
       <h2>Add Skill Offer</h2>
 
       <form id="offerForm">
-        <label>Your Name</label>
-        <input type="text" id="offerName" required>
-
-        <label>What can you teach?</label>
+        <label for="offerSkill">What can you teach?</label>
         <input type="text" id="offerSkill" required>
+
+        <label for="offerCategory">Category</label>
+        <input id="offerCategory" type="text" placeholder="e.g. Programming, Music" required>
+
+        <label for="offerDescription">Description</label>
+        <textarea id="offerDescription" placeholder="Describe what you teach" required></textarea>
 
         <button type="submit" class="submit-btn">Submit</button>
       </form>
@@ -119,17 +125,22 @@
       <h2>Add Skill Request</h2>
 
       <form id="requestForm">
-        <label>Your Name</label>
-        <input type="text" id="requestName" required>
-
-        <label>What do you want to learn?</label>
+        <label for="requestSkill">What do you want to learn?</label>
         <input type="text" id="requestSkill" required>
+
+        <label for="requestCategory">Category</label>
+        <input id="requestCategory" type="text" placeholder="e.g. Programming, Music" required>
+
+        <label for="requestDescription">Description</label>
+        <textarea id="requestDescription" placeholder="Describe what you need" required></textarea>
 
         <button type="submit" class="submit-btn">Submit</button>
       </form>
     </div>
   </div>
 
+  <script src="js/Benjamin.js"></script>
+  <script src="js/Pavian.js"></script>
   <script src="js/Cheng.js"></script>
 </body>
 </html>
