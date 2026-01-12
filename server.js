@@ -378,6 +378,10 @@ app.put("/api/posts/:id", requireAuth, SkillPostUtil.updatePost);
 // Delete a post (now requires login)
 app.delete("/api/posts/:id", requireAuth, SkillPostUtil.deletePost);
 
-app.listen(PORT, () => {
+if (require.main === module) {
+  app.listen(PORT, () => {
     console.log(`Merged SkillLink server running at http://localhost:${PORT}`);
-});
+  });
+}
+
+module.exports = app;
