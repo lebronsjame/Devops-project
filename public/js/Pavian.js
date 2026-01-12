@@ -165,7 +165,7 @@ function handleDelete(post) {
 }
 
 // expose functions globally so Cheng.js click handlers can call them
-window.handleEdit = handleEdit;
+window.handleEdit = handleDelete;
 
 // NOTE: if you already have handleDelete implemented elsewhere in this file,
 // keep it; otherwise Cheng.js' Delete button will fail.

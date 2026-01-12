@@ -40,12 +40,18 @@ function parseToken(token) {
     }
 }
 
+function logAuth(level, msg, meta = {}) {
+  const time = new Date().toISOString();
+  console[level](`[SkillLink][Auth][${time}] ${msg} ${JSON.stringify(meta)}`);
+}
+
 // Added: auth middleware
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization || "";
   const parts = auth.split(" ");
 
   if (parts.length !== 2 || parts[0] !== "Bearer") {
+    logAuth("warn", "AUTH_FAIL", { path: req.path, reason: "missing_token" });
     return res.status(401).json({ success: false, message: "Missing token" });
   }
 
@@ -53,6 +59,7 @@ function requireAuth(req, res, next) {
   const data = parseToken(token);
 
   if (!data || !data.id) {
+    logAuth("warn", "AUTH_FAIL", { path: req.path, reason: "invalid_token" });
     return res.status(401).json({ success: false, message: "Invalid token" });
   }
 
@@ -60,10 +67,12 @@ function requireAuth(req, res, next) {
   const user = users.find((u) => u.id === data.id);
 
   if (!user) {
+    logAuth("warn", "AUTH_FAIL", { path: req.path, reason: "user_not_found", userId: data.id });
     return res.status(401).json({ success: false, message: "User not found" });
   }
 
   req.user = { id: user.id, username: user.username };
+  logAuth("log", "AUTH_OK", { path: req.path, userId: user.id, username: user.username });
   next();
 }
 
