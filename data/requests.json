@@ -1,9 +1,10 @@
 [
   {
-    "id": 7,
-    "username": "Lisa",
-    "skill": "Cooking",
-    "category": "",
-    "description": ""
+    "id": 33,
+    "userId": "u2",
+    "username": "alex",
+    "skill": "ReqSkill",
+    "category": "ReqCat",
+    "description": "Req description long enough"
   }
 ]

@@ -6,6 +6,19 @@ document.addEventListener("DOMContentLoaded", function () {
     return localStorage.getItem('loggedInUser');
   }
 
+  async function getCurrentUserId() {
+    const token = localStorage.getItem("sl_token");
+    if (!token) return null;
+    try {
+      const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.success ? data.user.id : null;
+    } catch {
+      return null;
+    }
+  }
+
   const offerModal = document.getElementById("offerModal");
   const requestModal = document.getElementById("requestModal");
 
@@ -46,61 +59,82 @@ document.addEventListener("DOMContentLoaded", function () {
       offersList.innerHTML = "";
       requestsList.innerHTML = "";
 
-      const currentUser = getCurrentUser();
+      const currentUserId = await getCurrentUserId();
 
-      // render offers with buttons
       offers.forEach(o => {
         const li = document.createElement('li');
         const username = o.username || o.name || '';
-        // show 'I can teach' before the skill
-        li.innerHTML = `<strong>${username}:</strong> I can teach ${o.skill}${o.category ? ' • ' + o.category : ''}` +
-                 `<br><small>${o.description || ''}</small>`;
-        if (currentUser && username && username.toLowerCase() === currentUser.toLowerCase()) {
-          const br = document.createElement('br');
+        const categoryChip = o.category
+          ? `<div class="post-category"><span class="category-chip">${String(o.category)}</span></div>`
+          : "";
+        li.innerHTML = `
+          <div class="post-header">
+            <strong>${(o.username || o.name || "")}:</strong> I can teach ${o.skill}
+          </div>
+          ${categoryChip}
+          <div class="post-description">
+            <small>${o.description || ""}</small>
+          </div>
+        `;
+
+        if (currentUserId && o.userId && String(o.userId) === String(currentUserId)) {
+          const actions = document.createElement("div");
+          actions.className = "post-actions";
+
           const editBtn = document.createElement('button');
           editBtn.textContent = 'Edit';
           editBtn.className = 'action-btn edit-btn';
-          editBtn.dataset.id = o.id;
           editBtn.addEventListener('click', () => handleEdit(o));
 
           const delBtn = document.createElement('button');
           delBtn.textContent = 'Delete';
           delBtn.className = 'action-btn delete-btn';
-          delBtn.dataset.id = o.id;
           delBtn.addEventListener('click', () => handleDelete(o));
 
-          li.appendChild(br);
-          li.appendChild(editBtn);
-          li.appendChild(delBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+          li.appendChild(actions);
         }
+
         offersList.appendChild(li);
       });
 
-      // render requests with buttons
       requests.forEach(r => {
         const li = document.createElement('li');
-        const username = r.username || r.name || '';
-        // show 'I want to learn' before the skill
-        li.innerHTML = `<strong>${username}:</strong> I want to learn ${r.skill}${r.category ? ' • ' + r.category : ''}` +
-                 `<br><small>${r.description || ''}</small>`;
-        if (currentUser && username && username.toLowerCase() === currentUser.toLowerCase()) {
-          const br = document.createElement('br');
+
+        const categoryBlock = r.category
+          ? `<div class="post-category"><span class="category-chip">${String(r.category)}</span></div>`
+          : "";
+
+        li.innerHTML = `
+          <div class="post-header">
+            <strong>${(r.username || r.name || "")}:</strong> I want to learn ${r.skill}
+          </div>
+          ${categoryBlock}
+          <div class="post-description">
+            <small>${r.description || ""}</small>
+          </div>
+        `;
+
+        if (currentUserId && r.userId && String(r.userId) === String(currentUserId)) {
+          const actions = document.createElement("div");
+          actions.className = "post-actions";
+
           const editBtn = document.createElement('button');
           editBtn.textContent = 'Edit';
           editBtn.className = 'action-btn edit-btn';
-          editBtn.dataset.id = r.id;
           editBtn.addEventListener('click', () => handleEdit(r));
 
           const delBtn = document.createElement('button');
           delBtn.textContent = 'Delete';
           delBtn.className = 'action-btn delete-btn';
-          delBtn.dataset.id = r.id;
           delBtn.addEventListener('click', () => handleDelete(r));
 
-          li.appendChild(br);
-          li.appendChild(editBtn);
-          li.appendChild(delBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+          li.appendChild(actions);
         }
+
         requestsList.appendChild(li);
       });
     } catch (err) {
@@ -126,61 +160,90 @@ document.addEventListener("DOMContentLoaded", function () {
   offerForm.addEventListener("submit", async function(e) {
     e.preventDefault();
 
-    const name = document.getElementById("offerName").value.trim();
+    const token = localStorage.getItem("sl_token");
+    if (!token) {
+      alert("Please log in to create an offer.");
+      return;
+    }
+
     const skill = document.getElementById("offerSkill").value.trim();
-    if (!name || !skill) return;
+    const category = document.getElementById("offerCategory").value.trim();
+    const description = document.getElementById("offerDescription").value.trim();
+
+    if (!skill) return alert("Skill is required.");
+    if (!category) return alert("Category is required.");
+    if (!description) return alert("Description is required.");
+
+    if (skill.length > 30) return alert("Skill must be 30 characters or less.");
+    if (description.length < 10) return alert("Description must be at least 10 characters.");
 
     try {
       const res = await fetch("/api/offers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, skill }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ skill, category, description }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        console.error("Failed to save offer");
+        alert(data.message || data.error || "Failed to create offer.");
         return;
       }
 
-      const payload = await res.json();
-      const post = payload.post || { id: null, username: name, skill };
-      // reload lists to get normalized data
-      await loadData();
       offerModal.style.display = "none";
       offerForm.reset();
+      await loadData();
     } catch (err) {
-      console.error("Error submitting offer:", err);
+      console.error(err);
+      alert("Error creating offer.");
     }
   });
 
   requestForm.addEventListener("submit", async function(e) {
     e.preventDefault();
 
-    const name = document.getElementById("requestName").value.trim();
+    const token = localStorage.getItem("sl_token");
+    if (!token) {
+      alert("Please log in to create a request.");
+      return;
+    }
+
     const skill = document.getElementById("requestSkill").value.trim();
-    if (!name || !skill) return;
+    const category = document.getElementById("requestCategory").value.trim();
+    const description = document.getElementById("requestDescription").value.trim();
+
+    if (!skill) return alert("Skill is required.");
+    if (!category) return alert("Category is required.");
+    if (!description) return alert("Description is required.");
+
+    if (skill.length > 30) return alert("Skill must be 30 characters or less.");
+    if (description.length < 10) return alert("Description must be at least 10 characters.");
 
     try {
       const res = await fetch("/api/requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, skill }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ skill, category, description }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        console.error("Failed to save request");
+        alert(data.message || data.error || "Failed to create request.");
         return;
       }
 
-      const payload = await res.json();
-      const post = payload.post || { id: null, username: name, skill };
-      await loadData();
       requestModal.style.display = "none";
       requestForm.reset();
+      await loadData();
     } catch (err) {
-      console.error("Error submitting request:", err);
+      console.error(err);
+      alert("Error creating request.");
     }
   });
-
-  // Edit/Delete handled by `Pavian.js` (this file only renders posts)
 });

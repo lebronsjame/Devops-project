@@ -1,23 +1,10 @@
 [
   {
-    "id": 1,
-    "username": "John",
-    "skill": "Python",
-    "category": "",
-    "description": ""
-  },
-  {
-    "id": 2,
-    "username": "Mary",
-    "skill": "Guitar",
-    "category": "",
-    "description": ""
-  },
-  {
-    "id": 3,
-    "username": "Cheng",
-    "skill": "piano",
-    "category": "",
-    "description": ""
+    "id": 11,
+    "userId": "u1",
+    "username": "pavian",
+    "skill": "OldSkill",
+    "category": "OldCat",
+    "description": "Old description text"
   }
 ]

@@ -34,12 +34,9 @@ function setupEditModal() {
       currentEditingPost = null;
     }
   });
-  // Save button calls handleEditSave
+
   saveBtn.addEventListener("click", handleEditSave);
 }
-
-// Load posts
-// Note: rendering is done in `Cheng.js`. This file handles edit/delete only.
 
 // Open edit modal
 function handleEdit(post) {
@@ -53,44 +50,79 @@ function handleEdit(post) {
 
   const modal = document.getElementById("editModal");
   const skillInput = document.getElementById("editSkillInput");
+  const categoryInput = document.getElementById("editCategoryInput");
+  const descriptionInput = document.getElementById("editDescriptionInput");
 
-  if (!modal || !skillInput) {
+  if (!modal || !skillInput || !categoryInput || !descriptionInput) {
     console.error("Edit modal elements not found");
     return;
   }
 
-  // Prefill skill only
+  // Prefill all fields
   skillInput.value = post.skill || "";
+  categoryInput.value = post.category || "";
+  descriptionInput.value = post.description || "";
 
-  modal.style.display = "flex"; // show modal
+  modal.style.display = "flex";
 }
 
 // Save edits
 function handleEditSave() {
-  const currentUser = getCurrentUser();
-  if (!currentUser) {
-    alert("Please log in to edit posts.");
-    return;
-  }
   if (!currentEditingPost) {
     alert("No post selected to edit.");
     return;
   }
 
+  const token = localStorage.getItem("sl_token");
+  if (!token) {
+    alert("Please log in to edit posts.");
+    return;
+  }
+
   const modal = document.getElementById("editModal");
   const skillInput = document.getElementById("editSkillInput");
+  const categoryInput = document.getElementById("editCategoryInput");
+  const descriptionInput = document.getElementById("editDescriptionInput");
+
+  if (!modal || !skillInput || !categoryInput || !descriptionInput) {
+    alert("Edit form is missing fields.");
+    return;
+  }
 
   const skill = skillInput.value.trim();
+  const category = categoryInput.value.trim();
+  const description = descriptionInput.value.trim();
 
   if (!skill) {
     alert("Skill is required.");
     return;
   }
+  if (!category) {
+    alert("Category is required.");
+    return;
+  }
+  if (!description) {
+    alert("Description is required.");
+    return;
+  }
+
+  // optional edge cases
+  if (skill.length > 30) {
+    alert("Skill must be 30 characters or less.");
+    return;
+  }
+  if (description.length < 10) {
+    alert("Description must be at least 10 characters.");
+    return;
+  }
 
   fetch(`/api/posts/${currentEditingPost.id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ skill, username: currentUser }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ skill, category, description }),
   })
     .then((res) => res.json())
     .then((data) => {
@@ -109,30 +141,32 @@ function handleEditSave() {
 
 // ===== DELETE – supporting feature + confirmation =====
 function handleDelete(post) {
-  const currentUser = getCurrentUser();
-  if (!currentUser) {
+  const token = localStorage.getItem("sl_token");
+  if (!token) {
     alert("Please log in to delete posts.");
     return;
   }
 
-  if (!confirm("Are you sure you want to delete this post?")) {
-    return;
-  }
+  if (!confirm("Are you sure you want to delete this post?")) return;
 
   fetch(`/api/posts/${post.id}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: currentUser }),
+    headers: { Authorization: `Bearer ${token}` },
   })
     .then((res) => res.json())
     .then((data) => {
       alert(data.message);
-      if (data.success) {
-        if (window.reloadPosts) window.reloadPosts();
-      }
+      if (data.success && window.reloadPosts) window.reloadPosts();
     })
     .catch((err) => {
       console.error(err);
       alert("Error deleting post.");
     });
 }
+
+// expose functions globally so Cheng.js click handlers can call them
+window.handleEdit = handleEdit;
+
+// NOTE: if you already have handleDelete implemented elsewhere in this file,
+// keep it; otherwise Cheng.js' Delete button will fail.
+// window.handleDelete = handleDelete;
