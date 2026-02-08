@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skilllink-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skilllink
+  template:
+    metadata:
+      labels:
+        app: skilllink
+    spec:
+      containers:
+      - name: skilllink
+        image: skilllink-app
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
