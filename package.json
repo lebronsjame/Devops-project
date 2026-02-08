@@ -16,16 +16,19 @@
     "start:coverage-ui": "cross-env STATIC_DIR=public-coverage node server.js"
   },
   "jest": {
-    "collectCoverageFrom": [
-      "utils/SkillPostUtil.js"
-    ],
-    "testPathIgnorePatterns": [
-      "<rootDir>/e2e/",
-      "<rootDir>/tests-e2e/",
-      "<rootDir>/playwright-report/",
-      "<rootDir>/test-results/"
-    ]
-  },
+  "collectCoverageFrom": [
+    "utils/SkillPostUtil.js"
+  ],
+  "testMatch": [
+    "**/tests/**/*.test.js"
+  ],
+  "testPathIgnorePatterns": [
+    "<rootDir>/e2e/",
+    "<rootDir>/tests-e2e/",
+    "<rootDir>/playwright-report/",
+    "<rootDir>/test-results/"
+  ]
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
