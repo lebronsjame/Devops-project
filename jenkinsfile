@@ -33,7 +33,9 @@ pipeline {
                 bat 'kubectl rollout status deployment/skilllink-deployment'
             }
         }
-            post {
+    } // This brace closes the stages block correctly
+
+    post {
         success {
             mail to: 'pugproof2@gmail.com',
                  subject: "SkillLink Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
@@ -44,7 +46,5 @@ pipeline {
                  subject: "SkillLink Pipeline FAILED - Build #${env.BUILD_NUMBER}",
                  body: "The pipeline failed.\n\nCheck details here:\n${env.BUILD_URL}"
         }
-    }
-
     }
 }
