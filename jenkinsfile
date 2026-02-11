@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Install') {
+            steps {
+                bat 'npm ci'
+            }
+        }
+
+        stage('Test - Jest') {
+            steps {
+                bat 'npx jest --coverage'
+            }
+        }
+
+        stage('Test - Playwright') {
+            steps {
+                bat 'npx playwright test'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -t skilllink-app .'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                bat 'kubectl apply -f k8s/deployment.yaml'
+                bat 'kubectl apply -f k8s/service.yaml'
+                bat 'kubectl rollout status deployment/skilllink-deployment'
+            }
+        }
+            post {
+        success {
+            mail to: 'pugproof2@gmail.com',
+                 subject: "SkillLink Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
+                 body: "The CI/CD pipeline completed successfully.\n\nBuild URL: ${env.BUILD_URL}"
+        }
+        failure {
+            mail to: 'pugproof2@gmail.com',
+                 subject: "SkillLink Pipeline FAILED - Build #${env.BUILD_NUMBER}",
+                 body: "The pipeline failed.\n\nCheck details here:\n${env.BUILD_URL}"
+        }
+    }
+
+    }
+}
