@@ -4,8 +4,8 @@ pipeline {
     stages {
         stage('Install') {
             steps {
+                bat 'kubectl apply -f deployment.yaml'
                 bat 'npm ci'
-                at 'taskkill /F /IM node.exe /T || exit 0' 
             }
         }
 
