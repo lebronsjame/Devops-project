@@ -5,6 +5,7 @@ pipeline {
         stage('Install') {
             steps {
                 bat 'npm ci'
+                at 'taskkill /F /IM node.exe /T || exit 0' 
             }
         }
 
@@ -33,14 +34,7 @@ pipeline {
                 bat 'kubectl rollout status deployment/skilllink-deployment'
             }
         }
-
-        stage('Install') {
-            steps {
-                bat 'taskkill /F /IM node.exe /T || exit 0' 
-                bat 'npm ci'
-            }
-        }
-    } // This brace closes the stages block correctly
+    } 
 
     post {
         success {
