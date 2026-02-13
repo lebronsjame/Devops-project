@@ -79,7 +79,7 @@ export default defineConfig({
     // When collecting frontend coverage we set STATIC_DIR=public-coverage.
     // In that case we must restart the server, otherwise an already-running
     // server will keep serving non-instrumented assets and __coverage__ is null.
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI && !process.env.STATIC_DIR,
     timeout: 120000,
   },
 });

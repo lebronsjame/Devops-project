@@ -1,11 +1,25 @@
 pipeline {
     agent any
 
+    environment {
+        // This tells Playwright it's running in CI mode
+        CI = 'true'
+    }
+
     stages {
+        stage('Cleanup') {
+            steps {
+                // Kill any hanging node processes from previous failed runs
+                // '|| exit 0' ensures the pipeline doesn't fail if no node process is found
+                bat 'taskkill /F /IM node.exe /T || exit 0'
+            }
+        }
+
         stage('Install') {
             steps {
-                bat 'kubectl apply -f deployment.yaml'
                 bat 'npm ci'
+                // Ensure Playwright browsers are installed (essential for Jenkins agents)
+                bat 'npx playwright install --with-deps'
             }
         }
 
@@ -17,6 +31,8 @@ pipeline {
 
         stage('Test - Playwright') {
             steps {
+                // We use --project=chromium if you want to speed it up, 
+                // or keep it as is to run all browsers.
                 bat 'npx playwright test'
             }
         }
@@ -37,6 +53,10 @@ pipeline {
     } 
 
     post {
+        always {
+            // Archive Playwright reports and traces so you can see WHY it failed
+            publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Report', reportTitles: ''])
+        }
         success {
             mail to: 'pugproof2@gmail.com',
                  subject: "SkillLink Pipeline SUCCESS - Build #${env.BUILD_NUMBER}",
