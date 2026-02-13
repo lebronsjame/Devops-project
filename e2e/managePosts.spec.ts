@@ -100,20 +100,30 @@ test.describe("SkillLink UI (edit/delete)", () => {
     const token = makeFakeToken({ id: "u2", username: "alex" });
 
     await page.addInitScript(({ token }) => {
-      localStorage.setItem("sl_token", token);
-      localStorage.setItem("loggedInUser", "alex");
+        localStorage.setItem("sl_token", token);
+        localStorage.setItem("loggedInUser", "alex");
     }, { token });
 
     await page.goto("/index.html");
 
-    await expect(page.getByText("I want to learn ReqSkill")).toBeVisible();
+    // Wait for it to appear
+    const postLocator = page.getByText("I want to learn ReqSkill");
+    await expect(postLocator).toBeVisible();
 
-    // Click Delete (for the request)
+    // Setup listener for the DELETE network call
+    const deleteResponse = page.waitForResponse(resp => 
+        resp.url().includes('/api/posts') && resp.request().method() === 'DELETE'
+    );
+
+    // Click Delete
     await page.getByRole("button", { name: "Delete" }).click();
 
-    // Should be gone after reload
-    await expect(page.getByText("I want to learn ReqSkill")).toHaveCount(0);
-  });
+    // Wait for the server to actually say "OK"
+    await deleteResponse;
+
+    // Give the UI one second to remove the element from the DOM
+    await expect(postLocator).toHaveCount(0, { timeout: 5000 });
+});
 
   test("Not logged in: edit blocked with alert", async ({ page }) => {
     // No token set
